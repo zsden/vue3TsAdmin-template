@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory, RouteLocationNormalized } from 'vue-router'
+import { createRouter, createWebHashHistory, RouteMeta, RouteRecordRaw } from 'vue-router'
 import type { RouteComponent, _RouteRecordBase } from 'vue-router'
 import localCache from '../utils/cache'
 import { reactive } from 'vue'
@@ -6,14 +6,15 @@ import { reactive } from 'vue'
 import layout from '../components/layout/index.vue'
 
 declare type Lazy<T> = () => Promise<T>
-export declare interface routerPath extends _RouteRecordBase {
+export declare interface routerPath {
   id: number
-  name: string
   icon: string
+  path: string
+  name: string
   hidden?: boolean
   component: RouteComponent | Lazy<RouteComponent>
-  // components?: never
-  // props?: Record<string, boolean | Record<string, any> | ((to: RouteLocationNormalized) => Record<string, any>)> | boolean
+  meta?: RouteMeta
+  children?: RouteRecordRaw[]
 }
 
 export const routes: routerPath[] = [

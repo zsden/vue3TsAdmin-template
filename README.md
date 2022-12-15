@@ -4,7 +4,7 @@
 - Typescript 
 - Vite 
 - ElementPlus 
-- Vuex 后续准备尝试pinia
+- pinia
 
 ## 目前已完成功能
 - 路由与侧边栏动态响应

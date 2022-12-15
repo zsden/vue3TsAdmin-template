@@ -1,19 +1,20 @@
 <template>
-  <div @click="login">{{ count }}</div>
+  <div @click="login">{{ username }}</div>
 </template>
 
 <script lang="ts">
-import { useStore } from 'vuex'
-import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useUserStore } from '../pinia/user'
 export default {
   setup() {
-    const store = useStore()
+    const userStore = useUserStore()
     const login = () => {
-      store.dispatch('login')
+      userStore.login('欧阳')
     }
+    const { username } = storeToRefs(userStore)
     return {
       login,
-      count: computed(() => store.state.user.username)
+      username: username
     }
   }
 }

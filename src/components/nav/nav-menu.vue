@@ -46,7 +46,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { menus, resetRouter } from '../../router/index'
 // import { useStore } from '@/store'
@@ -63,8 +63,16 @@ export default defineComponent({
   setup() {
     const router = useRouter()
     const route = useRoute()
+    const menuActive = ref('')
 
-    const menuActive = route.path
+    menuActive.value = route.path
+
+    watch(
+      () => route.path,
+      (newPath) => {
+        menuActive.value = newPath
+      }
+    )
 
     const goRouter = (path: string) => {
       router.push(path)

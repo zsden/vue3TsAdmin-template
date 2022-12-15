@@ -58,7 +58,7 @@ export default defineComponent({
       if (menu) {
         if (menu.children && menu.children.length > 1) {
           breadcrumb.push({
-            name: name as string,
+            name: name,
             path: path
           })
         } else {

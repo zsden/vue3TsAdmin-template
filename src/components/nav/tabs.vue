@@ -7,7 +7,7 @@
         :key="tab.path"
         class="tabs-item"
         :class="isActive(tab) ? 'active' : ''"
-        :to="{ path: tab.path, query: tab.query, fullPath: tab.fullPath }"
+        :to="{ path: tab.path, query: tab.query }"
         tag="span"
         @contextmenu.prevent="openMenu(tab, $event)"
       >
@@ -29,8 +29,9 @@
 <script lang="ts">
 import scrollPane from './scrollPane.vue'
 import { computed, defineComponent, watch, onMounted, ref, nextTick } from 'vue'
-import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
+import { tabView, delType, useTabsStore } from '../../pinia/tabs'
+import { storeToRefs } from 'pinia'
 
 const visible = ref(false)
 
@@ -44,7 +45,7 @@ export default defineComponent({
     scrollPane
   },
   setup() {
-    const store = useStore()
+    const tabsStore = useTabsStore()
     const route = useRoute()
     const router = useRouter()
 
@@ -57,7 +58,7 @@ export default defineComponent({
       return isActive
     })
 
-    const isAffix = (tab: { meta: { affix: boolean } }) => {
+    const isAffix = (tab: tabView) => {
       return tab.meta && tab.meta.affix
     }
 
@@ -66,21 +67,13 @@ export default defineComponent({
     })
 
     const addTab = () => {
-      const { name } = route
-      // 已存在的标签就不更新tabs状态
-      // 就是点击过的菜单，在点击不触发行为
-      if (name) {
-        store.dispatch('tabs/addView', route)
+      if (route.name) {
+        tabsStore.addView(route)
       }
-
-      return false
     }
 
-    const closeTabs = (tab: any) => {
-      console.log(tab);
-      
-      store.dispatch('tabs/delView', tab).then(({ visitedViews }) => {
-        // 如果删除的是当前页面，则跳转去下一个页面
+    const closeTabs = (tab: tabView) => {
+      tabsStore.delView(tab, delType.self).then(({ visitedViews }) => {
         if (tab.path === route.path) {
           if (visitedViews.length) {
             // 跳转到最后一个标签
@@ -100,7 +93,7 @@ export default defineComponent({
 
     watch(
       () => route.path,
-      (newPath) => {
+      () => {
         addTab()
       }
     )
@@ -108,34 +101,26 @@ export default defineComponent({
     //右键菜单部分
     const top = ref(0)
     const left = ref(0)
-    const selectedTab = ref({
-      path: '',
-      fullPath: '',
-      meta: {
-        affix: false
-      }
-    })
+    const selectedTab = ref({} as tabView)
 
-    const openMenu = (tab: { path: string; fullPath: string; meta: { affix: boolean } }, e: { clientX: number; offsetY: number }) => {
+    const openMenu = (tab: tabView, e: { clientX: number; offsetY: number }) => {
       // 计算偏移量
-      // $el = Tabs.vue 这个Dom
-      // getBoundingClientRect().left 获取tabs 距离窗口左边距离。
       // 由于left 根据父元素进行偏移。
       // 所以 left = 鼠标在窗口的x坐标 - 侧边栏宽度     15为菜单离鼠标一段距离
       left.value = e.clientX - 210 + 15 // 15: margin right
-      // // top 由于不用适配，所以采用 鼠标在当前元素的相对位置
       top.value = e.offsetY
-      // // 显示菜单
       visible.value = true
-      // // 功能操作的tab。
+      tab.meta = {
+        ...tab.meta,
+        affix: tab.meta.affix || false
+      }
       selectedTab.value = tab
     }
 
     const menu = (select: string) => {
       switch (select) {
         case 'refresh':
-          // 清除该页面缓存，在跳转该路由 达到刷新效果。
-          store.dispatch('tabs/delCachedView', selectedTab).then(() => {
+          tabsStore.delCachedView(selectedTab.value).then(() => {
             const { fullPath } = selectedTab.value
             nextTick(() => {
               const { query } = route
@@ -147,13 +132,12 @@ export default defineComponent({
           closeTabs(selectedTab.value)
           break
         case 'other':
-          store.dispatch('tabs/delOtherView', selectedTab.value).then(() => {
-            // 不是当前激活，删除其他后，跳转到该页面
+          tabsStore.delView(selectedTab.value, delType.other).then(() => {
             if (!isActive(selectedTab.value)) router.push(selectedTab.value.fullPath)
           })
           break
         case 'all':
-          store.dispatch('tabs/delAllView').then(() => {
+          tabsStore.delView(selectedTab.value, delType.all).then(() => {
             router.push('/')
           })
           break
@@ -162,8 +146,9 @@ export default defineComponent({
       visible.value = false
     }
 
+    const { visitedViews } = storeToRefs(tabsStore)
     return {
-      visitedViews: computed(() => store.state.tabs.visitedViews),
+      visitedViews: visitedViews,
       isActive: isActiveCd,
       isAffix: isAffixCd,
       closeTabs,
